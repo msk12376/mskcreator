@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌹 Rose Blooming from Code</title>
+    <meta name="description" content="A single div transforms into a beautiful blooming 3D rose.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;500;700&family=Fira+Code:wght@300;500&display=swap" rel="stylesheet">
+    
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: #020002;
+            background: radial-gradient(ellipse at 50% 75%, #160107 0%, #080003 55%, #000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.95) 100%);
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .spotlight {
+            position: fixed;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85vw;
+            height: 85vh;
+            background: radial-gradient(circle, rgba(255, 30, 80, 0.08) 0%, transparent 70%);
+            filter: blur(50px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .trigger-overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 200;
+            opacity: 1;
+            transition: opacity 1s cubic-bezier(0.25, 1, 0.5, 1), visibility 1s;
+            visibility: visible;
+        }
+
+        .trigger-overlay.fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .glass-card {
+            position: relative;
+            width: min(85vw, 340px);
+            background: rgba(22, 10, 15, 0.6);
+            border: 1px solid rgba(255, 40, 100, 0.25);
+            border-radius: 24px;
+            padding: 40px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            box-shadow:
+                0 25px 60px rgba(0, 0, 0, 0.8),
+                inset 0 0 20px rgba(255, 255, 255, 0.02),
+                0 0 40px rgba(255, 30, 80, 0.15);
+            transform: scale(1);
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+        }
+
+        .trigger-overlay.fade-out .glass-card {
+            transform: scale(0.85) translateY(20px);
+        }
+
+        .card-glow {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 30, 80, 0.2) 0%, transparent 70%);
+            top: -40px;
+            left: -40px;
+            filter: blur(20px);
+            pointer-events: none;
+        }
+
+        .rose-icon {
+            font-size: 58px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 15px rgba(255, 30, 80, 0.5));
+            animation: pulseIcon 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseIcon {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.08) translateY(-3px); }
+        }
+
+        .glass-card .title {
+            color: #fff;
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            margin-bottom: 25px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .loading-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff2e5e, #ff0044, #ff2e5e);
+            background-size: 200% 100%;
+            border-radius: 4px;
+            transition: width 0.1s linear;
+            animation: gradientMove 2s linear infinite;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: #c9b5c2;
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 30px;
+            letter-spacing: 0.5px;
+        }
+
+        .start-button {
+            position: relative;
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #ff2e5e 0%, #ff0044 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 8px 25px rgba(255, 0, 68, 0.4);
+        }
+
+        .start-button:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.2);
+            border-color: transparent;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none !important;
+        }
+
+        .start-button:not(:disabled):hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(255, 0, 68, 0.6), 0 0 20px rgba(255, 50, 90, 0.4);
+        }
+
+        .start-button:active {
+            transform: translateY(1px);
+        }
+
+        .btn-shine {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transform: skewX(-25deg);
+        }
+
+        .start-button:not(:disabled):hover .btn-shine {
+            animation: shine 1.5s ease-in-out infinite;
+        }
+
+        @keyframes shine {
+            100% { left: 200%; }
+        }
+
+        .ambient-light {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 30, 60, 0.12) 0%, rgba(255, 20, 50, 0.05) 40%, transparent 70%);
+            top: 32%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 4s ease;
+        }
+
+        .ambient-light.visible {
+            opacity: 1;
+        }
+
+        /* Magical Dust Particles */
+        .particles-container {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .magic-dust {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px 2px rgba(255, 100, 150, 0.8);
+            opacity: 0;
+            animation: floatUp var(--dust-dur, 6s) ease-in forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0); opacity: 0; }
+            20% { opacity: var(--dust-op, 0.8); transform: translateY(-20px) scale(1); }
+            80% { opacity: var(--dust-op, 0.8); }
+            100% { transform: translateY(-150px) scale(0); opacity: 0; }
+        }
+
+        .scene {
+            perspective: 1200px;
+            perspective-origin: 50% 35%;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 6vh;
+            z-index: 20;
+            transform: scale(0.95);
+        }
+
+        .rose-wrapper {
+            transform-style: preserve-3d;
+            position: relative;
+            width: 300px;
+            height: 480px;
+            transform: rotateX(-22deg) rotateY(0deg);
+            will-change: transform;
+        }
+
+        .rose-wrapper.rotating {
+            animation: rotateRose 35s linear infinite;
+        }
+
+        @keyframes rotateRose {
+            from { transform: rotateX(-22deg) rotateY(0deg); }
+            to { transform: rotateX(-22deg) rotateY(360deg); }
+        }
+
+        .stem-group {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 250px;
+            transform-style: preserve-3d;
+        }
+
+        .stem {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to top, #06210d 0%, #0d3819 30%, #165c2b 70%, #0d3819 100%);
+            border-radius: 5px;
+            transition: height 2.5s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow: hidden;
+            will-change: height;
+            box-shadow: inset -2px 0 5px rgba(0,0,0,0.5);
+        }
+
+        .stem.grow {
+            height: 100%;
+        }
+
+        .stem-highlight {
+            position: absolute;
+            top: 0;
+            left: 1px;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(180, 255, 200, 0.2), transparent);
+            filter: blur(1px);
+        }
+
+        .thorn {
+            position: absolute;
+            width: 12px;
+            height: 7px;
+            opacity: 0;
+            transition: opacity 0.6s ease 0.5s;
+            z-index: 2;
+        }
+
+        .thorn::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #165c2b, #06210d);
+            clip-path: polygon(0% 85%, 100% 50%, 30% 0%);
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .thorn-1 { right: -10px; bottom: 65%; transform: scaleX(-1); }
+        .thorn-2 { left: -10px; bottom: 42%; }
+        .stem.grow ~ .thorn { opacity: 0.85; }
+
+        .leaf {
+            position: absolute;
+            width: 55px;
+            height: 28px;
+            opacity: 0;
+            transition: opacity 0.8s ease, transform 1.2s cubic-bezier(0.34, 1.45, 0.64, 1);
+            z-index: 2;
+            will-change: transform, opacity;
+        }
+
+        .leaf::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(160deg, #227a40 0%, #165c2b 40%, #06210d 100%);
+            border-radius: 2px 65% 2px 65%;
+            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.1), 3px 5px 10px rgba(0,0,0,0.5);
+        }
+
+        .leaf-vein {
+            position: absolute;
+            width: 65%;
+            height: 1.5px;
+            background: rgba(180, 255, 200, 0.15);
+            top: 48%;
+            left: 18%;
+            z-index: 1;
+            border-radius: 1px;
+            transform: rotate(-2deg);
+        }
+
+        .leaf-left {
+            left: -55px;
+            bottom: 56%;
+            transform-origin: right center;
+            transform: rotate(35deg) scale(0);
+        }
+
+        .leaf-left::before { border-radius: 65% 2px 65% 2px; }
+        .leaf-right {
+            left: 10px;
+            bottom: 38%;
+            transform-origin: left center;
+            transform: rotate(-35deg) scale(0);
+        }
+        .leaf-right::before { border-radius: 2px 65% 2px 65%; }
+        
+        .leaf.visible { opacity: 1; }
+        .leaf-left.visible { transform: rotate(15deg) scale(1); }
+        .leaf-right.visible { transform: rotate(-15deg) scale(1); }
+
+        .calyx {
+            position: absolute;
+            bottom: 242px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            transform-style: preserve-3d;
+            z-index: 1;
+        }
+
+        .sepal {
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            width: 15px;
+            height: 35px;
+            transform-origin: 50% 100%;
+            background: linear-gradient(to top, #06210d 0%, #104421 40%, #20803e 100%);
+            border-radius: 50% 50% 10% 10% / 80% 80% 20% 20%;
+            clip-path: polygon(10% 100%, 0% 30%, 50% 0%, 100% 30%, 90% 100%);
+            opacity: 0;
+            transform: translateX(-50%) rotateY(var(--sepal-angle, 0deg)) rotateX(60deg) scale(0.5);
+            transition: transform 1.5s cubic-bezier(0.25, 1, 0.5, 1) var(--sepal-delay, 0s), opacity 0.6s ease var(--sepal-delay, 0s);
+            will-change: transform, opacity;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .calyx.visible .sepal {
+            opacity: 0.95;
+            transform: translateX(-50%) rotateY(var(--sepal-angle, 0deg)) rotateX(var(--sepal-curl, 22deg)) scale(1);
+        }
+
+        .rose-head {
+            position: absolute;
+            bottom: 245px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            transform-style: preserve-3d;
+            z-index: 10;
+        }
+
+        .rose-glow {
+            position: absolute;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(200, 10, 40, 0.2) 0%, rgba(120, 0, 25, 0.05) 45%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 4s ease;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .rose-glow-inner {
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(220, 20, 50, 0.25) 0%, transparent 65%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 2.5s ease 1s;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .rose-head.blooming .rose-glow,
+        .rose-head.blooming .rose-glow-inner {
+            opacity: 1;
+        }
+
+        .petal {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform-origin: 50% 100%;
+            opacity: 0.001;
+            will-change: transform, opacity;
+            border-radius: 50% 50% 35% 35% / 45% 45% 55% 55%;
+            transform: translateX(-50%) rotateY(var(--angle, 0deg)) translateZ(0px) rotateX(90deg) scale(0.1);
+            transition: transform var(--bloom-dur, 2.5s) ease-in-out var(--delay, 0s), opacity 0.8s ease var(--delay, 0s);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .rose-head.blooming .petal {
+            opacity: 1;
+            transform: translateX(-50%) rotateY(var(--angle, 0deg)) translateZ(var(--tz, 0px)) rotateX(var(--curl, 30deg)) scale(var(--scale, 1));
+        }
+
+        /* Enhanced Velvety Petal Colors */
+        .petal-bud { background: linear-gradient(to bottom, #4a000a 0%, #290004 40%, #150001 75%, #050000 100%); }
+        .petal-core { background: linear-gradient(to bottom, #63000f 0%, #400006 40%, #1f0002 75%, #0a0000 100%); }
+        .petal-inner { background: linear-gradient(to bottom, #820015 0%, #57000a 40%, #2d0004 75%, #0f0000 100%); }
+        .petal-mid-inner { background: linear-gradient(to bottom, #9c001c 0%, #6e0010 40%, #3b0005 75%, #150000 100%); }
+        .petal-mid { background: linear-gradient(to bottom, #b50022 0%, #820013 40%, #470006 75%, #1a0000 100%); }
+        .petal-outer { background: linear-gradient(to bottom, #cc0029 0%, #960017 40%, #540008 75%, #1f0001 100%); }
+        .petal-blush { background: linear-gradient(to bottom, #e00032 0%, #a8001b 40%, #60000a 75%, #240001 100%); }
+
+        .falling-petal {
+            position: fixed;
+            width: var(--fp-w, 14px);
+            height: var(--fp-h, 18px);
+            background: radial-gradient(ellipse at 40% 30%, var(--fp-c1, #b50022), var(--fp-c2, #4a000a) 80%);
+            border-radius: 50% 50% 45% 55% / 60% 60% 40% 40%;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            animation: fallSway var(--f-dur, 7s) linear forwards;
+            animation-delay: var(--f-delay, 0s);
+            will-change: transform, opacity;
+        }
+
+        @keyframes fallSway {
+            0% { opacity: 0; transform: translateX(0) translateY(-5vh) rotate(0deg) rotateY(0deg) scale(1); }
+            8% { opacity: 0.9; }
+            25% { transform: translateX(var(--s1, 40px)) translateY(20vh) rotate(80deg) rotateY(45deg) scale(0.95); }
+            50% { transform: translateX(var(--s2, -30px)) translateY(50vh) rotate(170deg) rotateY(100deg) scale(0.85); }
+            75% { transform: translateX(var(--s3, 40px)) translateY(80vh) rotate(280deg) rotateY(160deg) scale(0.75); opacity: 0.6; }
+            100% { opacity: 0; transform: translateX(var(--s4, 15px)) translateY(115vh) rotate(400deg) rotateY(220deg) scale(0.5); }
+        }
+
+        .end-text {
+            position: fixed;
+            bottom: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 3s ease 1s;
+            z-index: 60;
+        }
+
+        .end-text.visible { opacity: 1; }
+
+        .tagline {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: clamp(20px, 6vw, 34px);
+            color: #ffdce8;
+            letter-spacing: 5px;
+            text-transform: lowercase;
+            text-shadow: 0 0 30px rgba(255, 80, 130, 0.6), 0 0 70px rgba(255, 50, 100, 0.3);
+            margin-bottom: 12px;
+        }
+
+        .rose-emoji {
+            font-size: 36px;
+            display: block;
+            animation: floatEmoji 3s ease-in-out infinite;
+            filter: drop-shadow(0 5px 15px rgba(255,30,80,0.5));
+        }
+
+        @keyframes floatEmoji {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-10px) scale(1.05); }
+        }
+
+        /* Watermarks */
+        .watermark {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.15);
+            z-index: 1000;
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: color 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .watermark:hover {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .watermark { font-size: 9px; bottom: 10px; letter-spacing: 1px; }
+        }
+
+        @media (max-width: 480px) {
+            .rose-wrapper { transform: scale(0.85); }
+            .tagline { letter-spacing: 3px; }
+            .glass-card { padding: 30px 20px; }
+        }
+
+        @media (max-height: 600px) {
+            .rose-wrapper { transform: scale(0.7); }
+            .end-text { bottom: 5%; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="vignette"></div>
+    <div class="spotlight"></div>
+    <div class="ambient-light" id="ambientLight"></div>
+    <div class="particles-container" id="particlesContainer"></div>
+
+    <div class="trigger-overlay" id="triggerOverlay">
+        <div class="glass-card">
+            <div class="card-glow"></div>
+            <div class="rose-icon">🌹</div>
+            <h2 class="title">Rose for a rose</h2>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loadingBar"></div>
+            </div>
+            <p class="status-text" id="statusText">Ready to compile...</p>
+            <button class="start-button" id="startButton" disabled>
+                <span class="btn-text">Tap to Bloom</span>
+                <span class="btn-shine"></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="scene">
+        <div class="rose-wrapper" id="roseWrapper">
+            <div class="stem-group">
+                <div class="stem" id="stem">
+                    <div class="stem-highlight"></div>
+                </div>
+                <div class="thorn thorn-1" id="thorn1"></div>
+                <div class="thorn thorn-2" id="thorn2"></div>
+                <div class="leaf leaf-left" id="leafLeft">
+                    <div class="leaf-vein"></div>
+                </div>
+                <div class="leaf leaf-right" id="leafRight">
+                    <div class="leaf-vein"></div>
+                </div>
+            </div>
+
+            <div class="calyx" id="calyx"></div>
+
+            <div class="rose-head" id="roseHead">
+                <div class="rose-glow"></div>
+                <div class="rose-glow-inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="end-text" id="endText">
+        <p class="tagline" id="tagline">Subhashree i coded this for you</p>
+        <span class="rose-emoji">🌹</span>
+    </div>
+
+    <div id="fallingPetals"></div>
+    
+    <!-- Watermark -->
+    <div class="watermark">made by MSK creator</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const triggerOverlay = document.getElementById('triggerOverlay');
+            const startButton = document.getElementById('startButton');
+            const loadingBar = document.getElementById('loadingBar');
+            const statusText = document.getElementById('statusText');
+            const ambientLight = document.getElementById('ambientLight');
+            const roseWrapper = document.getElementById('roseWrapper');
+            const roseHead = document.getElementById('roseHead');
+            const calyx = document.getElementById('calyx');
+            const stem = document.getElementById('stem');
+            const leafLeft = document.getElementById('leafLeft');
+            const leafRight = document.getElementById('leafRight');
+            const endText = document.getElementById('endText');
+            const fallingPetalsEl = document.getElementById('fallingPetals');
+            const particlesContainer = document.getElementById('particlesContainer');
+
+            // Set up background music (Beethoven - Moonlight Sonata from Archive.org)
+            const bgMusic = new Audio('https://pagalnew.com/128-downloads/30350');
+            bgMusic.loop = true;
+            
+            // Adjusted petal configuration for a richer bloom
+            const PETAL_LAYERS = [
+                { count: 4, w: 26, h: 50, curl: 78, delayBase: 0, tz: 2, cls: 'petal-bud' },
+                { count: 5, w: 36, h: 62, curl: 65, delayBase: 0.3, tz: 9, cls: 'petal-core' },
+                { count: 6, w: 48, h: 76, curl: 48, delayBase: 0.6, tz: 18, cls: 'petal-inner' },
+                { count: 7, w: 60, h: 92, curl: 22, delayBase: 1.0, tz: 30, cls: 'petal-mid-inner' },
+                { count: 8, w: 76, h: 108, curl: -5, delayBase: 1.4, tz: 44, cls: 'petal-mid' },
+                { count: 9, w: 90, h: 124, curl: -25, delayBase: 1.9, tz: 60, cls: 'petal-outer' },
+                { count: 10, w: 104, h: 136, curl: -48, delayBase: 2.4, tz: 76, cls: 'petal-blush' },
+            ];
+
+            const SEPALS_COUNT = 5;
+            const FALLING_PETAL_COLORS = [
+                ['#b50022', '#4a000a'],
+                ['#9c001c', '#290004'],
+                ['#cc0029', '#57000a'],
+                ['#e00032', '#63000f'],
+            ];
+
+            let fallingPetalInterval = null;
+
+            function fadeAudioIn(audio, targetVolume, duration) {
+                audio.volume = 0;
+                audio.play().catch(err => console.log("Audio play blocked by browser:", err));
+                const steps = 50;
+                const stepVolume = targetVolume / steps;
+                const stepTime = duration / steps;
+                
+                let currentStep = 0;
+                const fadeInterval = setInterval(() => {
+                    currentStep++;
+                    if (currentStep <= steps) {
+                        audio.volume = currentStep * stepVolume;
+                    } else {
+                        audio.volume = targetVolume;
+                        clearInterval(fadeInterval);
+                    }
+                }, stepTime);
+            }
+
+            function startCardLoader() {
+                const duration = 2800;
+                const steps = [
+                    { threshold: 15, text: 'Connecting to MSK Creator...' },
+                    { threshold: 40, text: 'Synthesizing Love.css...' },
+                    { threshold: 65, text: 'Growing digital petals...' },
+                    { threshold: 85, text: 'Rendering velvet textures...' },
+                    { threshold: 100, text: 'Ready to bloom.' }
+                ];
+
+                let startTimestamp = null;
+
+                function animateLoader(timestamp) {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    // Easing for smoother loading bar
+                    const easeProgress = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    const percent = Math.floor(easeProgress * 100);
+
+                    loadingBar.style.width = `${percent}%`;
+                    const activeStep = steps.find(s => percent <= s.threshold) || steps[steps.length - 1];
+                    statusText.textContent = activeStep.text;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animateLoader);
+                    } else {
+                        startButton.removeAttribute('disabled');
+                        startButton.querySelector('.btn-text').textContent = 'Tap to Bloom';
+                    }
+                }
+                requestAnimationFrame(animateLoader);
+            }
+
+            function createSepals() {
+                const step = 360 / SEPALS_COUNT;
+                for (let i = 0; i < SEPALS_COUNT; i++) {
+                    const sepal = document.createElement('div');
+                    sepal.className = 'sepal';
+                    const angle = i * step + (Math.random() - 0.5) * 5;
+                    const delay = 0.4 + i * 0.08;
+                    const curl = 20 + Math.random() * 10;
+
+                    sepal.style.setProperty('--sepal-angle', `${angle}deg`);
+                    sepal.style.setProperty('--sepal-curl', `${curl}deg`);
+                    sepal.style.setProperty('--sepal-delay', `${delay}s`);
+                    calyx.appendChild(sepal);
+                }
+            }
+
+            function createPetals() {
+                PETAL_LAYERS.forEach((layer, li) => {
+                    const angleStep = 360 / layer.count;
+                    const layerOffset = li * 24 + (Math.random() - 0.5) * 10;
+
+                    for (let i = 0; i < layer.count; i++) {
+                        const petal = document.createElement('div');
+                        petal.className = `petal ${layer.cls}`;
+
+                        const angle = layerOffset + i * angleStep + (Math.random() - 0.5) * 6;
+                        const delay = layer.delayBase + i * 0.06;
+                        const curlJitter = (Math.random() - 0.5) * 8;
+                        const scaleJitter = 0.92 + Math.random() * 0.16;
+                        const bloomDur = 2.4 + Math.random() * 0.5;
+
+                        petal.style.width = `${layer.w}px`;
+                        petal.style.height = `${layer.h}px`;
+                        petal.style.setProperty('--angle', `${angle}deg`);
+                        petal.style.setProperty('--curl', `${layer.curl + curlJitter}deg`);
+                        petal.style.setProperty('--scale', scaleJitter);
+                        petal.style.setProperty('--delay', `${delay}s`);
+                        petal.style.setProperty('--tz', `${layer.tz}px`);
+                        petal.style.setProperty('--bloom-dur', `${bloomDur}s`);
+
+                        roseHead.appendChild(petal);
+                    }
+                });
+            }
+
+            function spawnMagicDust() {
+                const dust = document.createElement('div');
+                dust.className = 'magic-dust';
+                
+                const x = Math.random() * 100;
+                const y = 40 + Math.random() * 60; // Start from middle-bottom
+                const dur = 4 + Math.random() * 5;
+                const op = 0.4 + Math.random() * 0.6;
+                
+                dust.style.left = `${x}vw`;
+                dust.style.top = `${y}vh`;
+                dust.style.setProperty('--dust-dur', `${dur}s`);
+                dust.style.setProperty('--dust-op', op);
+                
+                particlesContainer.appendChild(dust);
+                setTimeout(() => { if (dust.parentNode) dust.remove(); }, dur * 1000);
+            }
+
+            function startMagicDust() {
+                // Initial burst
+                for(let i=0; i<15; i++) { setTimeout(spawnMagicDust, i * 150); }
+                // Continuous loop
+                setInterval(spawnMagicDust, 400);
+            }
+
+            function spawnFallingPetal() {
+                if (fallingPetalsEl.childElementCount > 15) return;
+
+                const petal = document.createElement('div');
+                petal.className = 'falling-petal';
+
+                const w = 12 + Math.random() * 14;
+                const h = w * (1.25 + Math.random() * 0.2);
+                const x = 15 + Math.random() * 70;
+                const dur = 6 + Math.random() * 4;
+                const delay = Math.random() * 0.8;
+
+                const colors = FALLING_PETAL_COLORS[Math.floor(Math.random() * FALLING_PETAL_COLORS.length)];
+                const sign = () => (Math.random() > 0.5 ? 1 : -1);
+
+                petal.style.left = `${x}vw`;
+                petal.style.top = `-5vh`;
+                petal.style.setProperty('--fp-w', `${w}px`);
+                petal.style.setProperty('--fp-h', `${h}px`);
+                petal.style.setProperty('--fp-c1', colors[0]);
+                petal.style.setProperty('--fp-c2', colors[1]);
+                petal.style.setProperty('--f-dur', `${dur}s`);
+                petal.style.setProperty('--f-delay', `${delay}s`);
+                petal.style.setProperty('--s1', `${sign() * (20 + Math.random() * 30)}px`);
+                petal.style.setProperty('--s2', `${sign() * (15 + Math.random() * 25)}px`);
+                petal.style.setProperty('--s3', `${sign() * (25 + Math.random() * 35)}px`);
+                petal.style.setProperty('--s4', `${sign() * (10 + Math.random() * 20)}px`);
+
+                fallingPetalsEl.appendChild(petal);
+
+                setTimeout(() => {
+                    if (petal.parentNode) petal.remove();
+                }, (dur + delay) * 1000 + 500);
+            }
+
+            function startFallingPetals() {
+                for (let i = 0; i < 4; i++) { setTimeout(() => spawnFallingPetal(), i * 400); }
+                fallingPetalInterval = setInterval(() => { spawnFallingPetal(); }, 1800);
+            }
+
+            function growStem() {
+                return new Promise(resolve => {
+                    stem.classList.add('grow');
+                    setTimeout(() => leafLeft.classList.add('visible'), 900);
+                    setTimeout(() => leafRight.classList.add('visible'), 1300);
+                    setTimeout(resolve, 2500);
+                });
+            }
+
+            function bloom() {
+                calyx.classList.add('visible');
+                ambientLight.classList.add('visible');
+                roseHead.classList.add('blooming');
+            }
+
+            async function startAnimationSequence() {
+                await growStem();
+                await new Promise(r => setTimeout(r, 150));
+                bloom();
+
+                setTimeout(() => { roseWrapper.classList.add('rotating'); }, 2800);
+                setTimeout(() => startFallingPetals(), 3800);
+                setTimeout(() => { endText.classList.add('visible'); }, 5200);
+            }
+
+            // Initialization triggers
+            startButton.addEventListener('click', () => {
+                triggerOverlay.classList.add('fade-out');
+                
+                // Start magical background elements
+                startMagicDust();
+                // Play and fade in Beethoven's Moonlight Sonata
+                fadeAudioIn(bgMusic, 0.4, 3000); 
+
+                setTimeout(() => {
+                    startAnimationSequence();
+                }, 1000);
+            });
+
+            createSepals();
+            createPetals();
+
+            setTimeout(() => {
+                startCardLoader();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
